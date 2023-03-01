@@ -1,4 +1,3 @@
-
 UNDERLINE = "(!u!)"
 BOLD = "(!b!)"
 RESET_ALL ="(!reset_all!)"
@@ -11,6 +10,7 @@ GREEN = "(!green!)"
 YELLOW = "(!yellow!)"
 GRAY = "(!gray!)"
 PINK = "(!pink!)"
+ORANGE = "(!orange!)"
 
 ansi_dict = {
 	RESET_ALL: "\033[0m", 
@@ -25,6 +25,7 @@ ansi_dict = {
 	"(!white!)": "\033[37m",
 	PINK: "\033[38;5;213m",
 	GRAY: "\033[90m",
+	ORANGE: "\033[38;5;208m",
 	BOLD: "\033[1m",
 	UNDERLINE: "\033[4m" }
 

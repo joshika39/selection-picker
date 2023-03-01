@@ -2,7 +2,7 @@ import os
 from getch import getch, pause
 import curses
 from abc import abstractmethod
-from colors import *
+from .colors import *
 
 
 KEYS_ENTER = (curses.KEY_ENTER, b"\n", b"\r")
