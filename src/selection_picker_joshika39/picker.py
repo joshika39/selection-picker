@@ -1,9 +1,9 @@
 import os
-import getch
+# from getch import getch, pause
 import curses
 from abc import abstractmethod
 
-from src.colors import *
+from .colors import *
 # I LOVE YOU!!!
 
 KEYS_ENTER = (curses.KEY_ENTER, b"\n", b"\r")
@@ -13,6 +13,17 @@ KEYS_SELECT = (curses.KEY_RIGHT, b' ')
 KEYS_ESC = b'\x1b'
 KEYS_SEARCH = (b's', b'f')
 KEYS_ALL = b'a'
+
+window = curses.initscr()
+curses.noecho()
+window.keypad(True)
+
+
+def clear():
+    if os.name == 'nt':
+        os.system('cls')
+    elif os.name == 'posix':
+        os.system('clear')
 
 
 class Menu:
@@ -33,13 +44,16 @@ class Menu:
         return self.title
 
     def action_check(self) -> bytes:
-        move = getch.getch()
+        print("Press a key")
+        move = window.get_wch()
+        print(f'You pressed {move}')
+        curses.flushinp()
         if move in KEYS_DOWN and self.selected + 1 < len(self.options):
             self.selected += 1
         if move in KEYS_UP and self.selected - 1 >= 0:
             self.selected -= 1
         if move in KEYS_SEARCH:
-            os.system('cls')
+            clear()
             search_string = input("Search: ")
             if search_string == "":
                 self.options = self.all_options
@@ -86,7 +100,7 @@ class SingleMenu(Menu):
             title = self.title
         move = None
         while move not in KEYS_ENTER or len(self.options) <= 0:
-            os.system('cls')
+            clear()
             print(f'{title}')
             for index in range(self.page * self.shown_content, self.shown_content + self.page * self.shown_content):
                 if index < len(self.options):
@@ -120,7 +134,7 @@ class MultiMenu(Menu):
         move = None
         selection = []
         while move not in KEYS_ENTER:
-            os.system('cls')
+            clear()
             print(f'{title}')
             for index in range(self.page * self.shown_content, self.shown_content + self.page * self.shown_content):
                 if index < len(self.options):
@@ -165,7 +179,7 @@ class MenuWrapper(Menu):
             title = self.title
         move = KEYS_ENTER[1]  # type: bytes
         while move not in KEYS_ESC:
-            os.system('cls')
+            clear()
             print(f'{title}')
             for index in range(self.page * self.shown_content, self.shown_content + self.page * self.shown_content):
                 if index < len(self.options):

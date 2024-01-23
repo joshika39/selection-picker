@@ -2,3 +2,7 @@ dist/*
 selection_picker_joshika39.egg-info
 venv/
 .idea/
+**/__pycache__/
+**/**/__pycache__/
+__pycache__/
+
