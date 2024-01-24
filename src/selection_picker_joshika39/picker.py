@@ -1,17 +1,13 @@
 import os
 from abc import abstractmethod
-from pynput import keyboard
 from .colors import *
 
-Key = keyboard.Key
-
-KEYS_ENTER = (Key.enter, b'\r', b'\n')
-KEYS_UP = (Key.up, b'k')
-KEYS_DOWN = (Key.down, b'j')
-KEYS_SELECT = (Key.space, b'x', 'x')
-KEYS_ESC = (Key.esc)
-KEYS_SEARCH = (b's', b'f', 's', 'f')
-KEYS_ALL = (b'a', 'a')
+if os.name == 'nt':
+    import msvcrt as gch
+elif os.name == 'posix':
+    import getch as gch
+else:
+    raise Exception('Unsupported OS')
 
 
 def clear():
@@ -20,20 +16,37 @@ def clear():
     elif os.name == 'posix':
         os.system('clear')
 
+        
+OS_ESCAPE = b'\x1b' if os.name == 'nt' else '\x1b'
+KEYS_ENTER = ('enter', b'\r', b'\n')
+KEYS_UP = ('up',b'k', 'k')
+KEYS_DOWN = ('down', 'j', b'j')
+KEYS_SELECT = (' ', b' ', b'x', 'x')
+KEYS_ESC = ('esc', f'{OS_ESCAPE}{OS_ESCAPE}')
+KEYS_SEARCH = (b's', b'f', 's', 'f')
+KEYS_ALL = (b'a', 'a')
+
 
 class KeyboardHandler:
-    selected_key = None  # type: Key | None
+    selected_key = None  # type: None | str
     
     def __init__(self):
         pass
 
-    def collect_key(self):
-        with keyboard.Listener(on_press=self.on_press) as listener:
-            listener.join()
+    def get_key(self):
+        first_char = gch.getch()
+        if first_char == OS_ESCAPE:
+            second_char = gch.getch()
+            if second_char == OS_ESCAPE:
+                self.selected_key = KEYS_ESC[0]  # Single Escape key press
+            else:
+                return {'[A': 'up', '[B': 'down', '[C': 'right', '[D': 'left'}[second_char + gch.getch()]
+        elif first_char == '\r' or first_char == '\n':
+            self.selected_key = 'enter'
+        else:
+            self.selected_key = first_char
 
-    def on_press(self, key):
-        self.selected_key = key
-        return False  # stop listener
+        return self.selected_key
 
 
 class Menu:
@@ -55,8 +68,7 @@ class Menu:
         return self.title
 
     def action_check(self):
-        self.keyboard_handler.collect_key()
-        key = self.keyboard_handler.selected_key
+        key = self.keyboard_handler.get_key()
         if key in KEYS_DOWN and self.selected + 1 < len(self.options):
             self.selected += 1
         if key in KEYS_UP and self.selected - 1 >= 0:
@@ -119,7 +131,7 @@ class SingleMenu(Menu):
                     else:
                         print(colorize(f'{self.indicator_space} {option}'))
             move = self.action_check()
-            if move == Key.esc:
+            if move in KEYS_ESC:
                 return None
         if self.callback is not None:
             self.callback(self.options[self.selected])
@@ -164,9 +176,9 @@ class MultiMenu(Menu):
                     selection.remove(self.options[self.selected])
                 else:
                     selection.append(self.options[self.selected])
-            if move == Key.esc:
+            if move in KEYS_ESC:
                 return None
-            if move == KEYS_ALL:
+            if move in KEYS_ALL:
                 if len(selection) < len(self.options):
                     selection = self.options
                 elif len(selection) == len(self.options):
@@ -186,8 +198,8 @@ class MenuWrapper(Menu):
             title = f'{parent} -> {self.title}'
         else:
             title = self.title
-        move = KEYS_ENTER[0]  # type: Key | None
-        while move != Key.esc:
+        move = KEYS_ENTER[0]
+        while move not in KEYS_ESC:
             clear()
             print(f'{title}')
             for index in range(self.page * self.shown_content, self.shown_content + self.page * self.shown_content):
