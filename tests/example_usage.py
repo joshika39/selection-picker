@@ -1,10 +1,9 @@
 from pathlib import Path
 import sys
 import os
+
 path_root = Path(__file__).parents[1]
-print(path_root)
 sys.path.append(os.path.join(path_root, 'src'))
-print(sys.path)
 
 from selection_picker_joshika39 import *
 
@@ -13,3 +12,6 @@ menu = SingleMenu("Good title", items)
 
 # Get the user's choice
 choice = menu.show()
+
+# Print the choice
+print(choice)

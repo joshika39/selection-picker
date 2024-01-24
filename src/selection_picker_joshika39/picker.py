@@ -1,22 +1,17 @@
 import os
-# from getch import getch, pause
-import curses
 from abc import abstractmethod
-
+from pynput import keyboard
 from .colors import *
-# I LOVE YOU!!!
 
-KEYS_ENTER = (curses.KEY_ENTER, b"\n", b"\r")
-KEYS_UP = (curses.KEY_UP, b'H', b'k')
-KEYS_DOWN = (b'P', b'j')
-KEYS_SELECT = (curses.KEY_RIGHT, b' ')
-KEYS_ESC = b'\x1b'
-KEYS_SEARCH = (b's', b'f')
-KEYS_ALL = b'a'
+Key = keyboard.Key
 
-window = curses.initscr()
-curses.noecho()
-window.keypad(True)
+KEYS_ENTER = (Key.enter, b'\r', b'\n')
+KEYS_UP = (Key.up, b'k')
+KEYS_DOWN = (Key.down, b'j')
+KEYS_SELECT = (Key.space, b'x', 'x')
+KEYS_ESC = (Key.esc)
+KEYS_SEARCH = (b's', b'f', 's', 'f')
+KEYS_ALL = (b'a', 'a')
 
 
 def clear():
@@ -24,6 +19,21 @@ def clear():
         os.system('cls')
     elif os.name == 'posix':
         os.system('clear')
+
+
+class KeyboardHandler:
+    selected_key = None  # type: Key | None
+    
+    def __init__(self):
+        pass
+
+    def collect_key(self):
+        with keyboard.Listener(on_press=self.on_press) as listener:
+            listener.join()
+
+    def on_press(self, key):
+        self.selected_key = key
+        return False  # stop listener
 
 
 class Menu:
@@ -39,20 +49,19 @@ class Menu:
         self.callback = callback
         self.search_engine = search_engine
         self.all_options = options
+        self.keyboard_handler = KeyboardHandler()
 
     def __str__(self):
         return self.title
 
-    def action_check(self) -> bytes:
-        print("Press a key")
-        move = window.get_wch()
-        print(f'You pressed {move}')
-        curses.flushinp()
-        if move in KEYS_DOWN and self.selected + 1 < len(self.options):
+    def action_check(self):
+        self.keyboard_handler.collect_key()
+        key = self.keyboard_handler.selected_key
+        if key in KEYS_DOWN and self.selected + 1 < len(self.options):
             self.selected += 1
-        if move in KEYS_UP and self.selected - 1 >= 0:
+        if key in KEYS_UP and self.selected - 1 >= 0:
             self.selected -= 1
-        if move in KEYS_SEARCH:
+        if key in KEYS_SEARCH:
             clear()
             search_string = input("Search: ")
             if search_string == "":
@@ -72,7 +81,7 @@ class Menu:
             self.page += 1
         elif self.selected <= (self.page * self.shown_content) - 1:
             self.page -= 1
-        return move
+        return key
 
     @abstractmethod
     def show(self, parent=''):
@@ -110,7 +119,7 @@ class SingleMenu(Menu):
                     else:
                         print(colorize(f'{self.indicator_space} {option}'))
             move = self.action_check()
-            if move in KEYS_ESC:
+            if move == Key.esc:
                 return None
         if self.callback is not None:
             self.callback(self.options[self.selected])
@@ -155,7 +164,7 @@ class MultiMenu(Menu):
                     selection.remove(self.options[self.selected])
                 else:
                     selection.append(self.options[self.selected])
-            if move in KEYS_ESC:
+            if move == Key.esc:
                 return None
             if move == KEYS_ALL:
                 if len(selection) < len(self.options):
@@ -177,8 +186,8 @@ class MenuWrapper(Menu):
             title = f'{parent} -> {self.title}'
         else:
             title = self.title
-        move = KEYS_ENTER[1]  # type: bytes
-        while move not in KEYS_ESC:
+        move = KEYS_ENTER[0]  # type: Key | None
+        while move != Key.esc:
             clear()
             print(f'{title}')
             for index in range(self.page * self.shown_content, self.shown_content + self.page * self.shown_content):
